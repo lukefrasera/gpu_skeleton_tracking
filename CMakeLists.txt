@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(CUDA REQUIRED)
 find_package(GLIB REQUIRED)
+find_package(Skeltrack REQUIRED)
+
 if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
   set(DEBUG 1)
   message("====================================================================")
@@ -114,8 +116,8 @@ set(SKELTRACK_INCLUDE_DIRS skeltrack-0.1)
 include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${SKELTRACK_INCLUDE_DIRS}
+  ${Glib_INCLUDE_DIRS}
+  ${Skeltrack_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -127,7 +129,11 @@ include_directories(
 add_executable(sequential_skeleton_tracking 
   src/seq_skeleton_tracking.cc
 )
-target_link_libraries(sequential_skeleton_tracking ${catkin_LIBRARIES})
+target_link_libraries(sequential_skeleton_tracking
+  ${catkin_LIBRARIES}
+  ${Glib_LIBRARIES}
+  ${Skeltrack_LIBRARIES}
+)
 
 #cuda_add_executable(gpu_skeleton_tracking
 #  src/gpu_skeleton_tracking.cu
