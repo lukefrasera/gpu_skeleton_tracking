@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(gpu_skeleton_tracking)
 
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/modules)
+message(${CMAKE_MODULE_PATH})
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -12,10 +15,19 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
 )
+find_package(CUDA REQUIRED)
+find_package(GLIB REQUIRED)
+if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+  set(DEBUG 1)
+  message("====================================================================")
+  message("=============================DEBUG MODE=============================")
+  message("====================================================================")
+  add_definitions(-DDEBUG=${DEBUG})
+endif(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -DMY_DEF=1")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -92,12 +104,18 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+set(ROOT_INCLUDE_DIR /usr/include)
+set(LOCAL_INCLUDE_DIR /usr/local/include)
 
+set(SKELTRACK_INCLUDE_DIRS skeltrack-0.1)
+#set(GLIB_INCLUDE_DIRS ${ROOT_INCLUDE_DIR}/glib-2.0)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${GLIB_INCLUDE_DIRS}
+  ${SKELTRACK_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -106,7 +124,14 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(gpu_skeleton_tracking_node src/gpu_skeleton_tracking_node.cpp)
+add_executable(sequential_skeleton_tracking 
+  src/seq_skeleton_tracking.cc
+)
+target_link_libraries(sequential_skeleton_tracking ${catkin_LIBRARIES})
+
+#cuda_add_executable(gpu_skeleton_tracking
+#  src/gpu_skeleton_tracking.cu
+#)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
