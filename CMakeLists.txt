@@ -106,10 +106,7 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-set(ROOT_INCLUDE_DIR /usr/include)
-set(LOCAL_INCLUDE_DIR /usr/local/include)
 
-set(SKELTRACK_INCLUDE_DIRS skeltrack-0.1)
 #set(GLIB_INCLUDE_DIRS ${ROOT_INCLUDE_DIR}/glib-2.0)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -128,6 +125,8 @@ include_directories(
 ## Declare a cpp executable
 add_executable(sequential_skeleton_tracking 
   src/seq_skeleton_tracking.cc
+  src/seq_skel_track.cc
+  src/RGB_D_receiver.cc
 )
 target_link_libraries(sequential_skeleton_tracking
   ${catkin_LIBRARIES}

@@ -15,21 +15,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <ros/ros.h>
-#include <stdio.h>
 #include "seq_skel_track.h"
-// #include <image_transport/image_transport.h>
-// #include <cv_bridge/cv_bridge.h>
-// #include <glib-object.h>
-// #include <sensor_msgs/image_encodings.h>
-// #include <skeltrack.h>
-// #include <math.h>
-// #include "opencv2/opencv.hpp"
 
-int main(int argc, char **argv) {
-  ros::init(argc, argv, "seq_skeleton");
-  printf("SkeletonTracking\n");
-  sk_track::SeqSkelTrack track;
-  ros::spin();
-  return 0;
+namespace sk_track {
+SeqSkelTrack::SeqSkelTrack() {
+  skeleton = skeltrack_skeleton_new();
 }
+SeqSkelTrack::~SeqSkelTrack() {
+  delete skeleton;
+}
+
+void SeqSkelTrack::TrackSkel(guint16 *data, guint width, guint height) {
+  skeltrack_skeleton_track_joints(skeleton, data,
+    )
+  printf("SEQ received depth frame\n");
+}
+void SeqSkelTrack::RGBImage(const cv::Mat *image) {
+  printf("SEQ received image frame\n");
+}
+}  // namespace sk_track
