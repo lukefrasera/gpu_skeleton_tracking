@@ -14,7 +14,7 @@ libfind_pkg_check_modules(Skeltrack_PKGCONF skeltrack-0.1)
 find_path(Skeltrack_INCLUDE_DIR
   NAMES skeltrack.h
   PATHS ${Skeltrack_PKGCONF_INCLUDE_DIRS}
-  PATH_SUFFIXES glib-2.0
+  PATH_SUFFIXES skeltrack-0.1
 )
 
 # Glib-related libraries also use a separate config header, which is in lib dir
