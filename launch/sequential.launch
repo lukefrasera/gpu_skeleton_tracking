@@ -1,0 +1,3 @@
+<launch>
+  <node name="DebugTest" pkg="gpu_skeleton_tracking" type="sequential_skeleton_tracking" launch-prefix="ddd --args"></node>
+</launch>

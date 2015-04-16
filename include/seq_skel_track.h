@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sensor_msgs/image_encodings.h>
 #include <stdint.h>
 #include <skeltrack.h>
+#include <glib-object.h>
 #include "RGB_D_receiver.h"
 #include "opencv2/opencv.hpp"
 
@@ -32,7 +33,8 @@ class SeqSkelTrack : public RGBDReceive {
   SeqSkelTrack();
   virtual ~SeqSkelTrack();
 
-  virtual void TrackSkel(const uint8_t *data);
+  virtual void TrackSkel(guint16 *data, guint width, guint height);
+  void GetJoints();
   virtual void RGBImage(const cv::Mat *image);
  protected:
   SkeltrackSkeleton * skeleton;

@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sensor_msgs/image_encodings.h>
 #include <stdint.h>
 #include <cv_bridge/cv_bridge.h>
+#include <skeltrack.h>
+#include <glib-object.h>
 #include "opencv2/opencv.hpp"
 
 namespace sk_track {
@@ -34,7 +36,7 @@ class RGBDReceive {
   void OnDepth(const sensor_msgs::ImageConstPtr &msg);
   void OnImage(const sensor_msgs::ImageConstPtr &msg);
 
-  virtual void TrackSkel(const uint8_t *data);
+  virtual void TrackSkel(guint16 *data, guint width, guint height);
   virtual void RGBImage(const cv::Mat *image);
 
  protected:
@@ -44,5 +46,6 @@ class RGBDReceive {
   image_transport::Subscriber cam_image_sub_;
   cv_bridge::CvImageConstPtr cv_depth, cv_image;
 };
+static char WINDOW[] = "RGB Image";
 }  // namespace sk_track
 #endif

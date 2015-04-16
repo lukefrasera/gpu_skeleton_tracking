@@ -18,11 +18,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include "RGB_D_receiver.h"
 
+
 namespace sk_track {
-static char WINDOW[] = "RGB Image";
 
 RGBDReceive::RGBDReceive(): it_(nh_) {
-  cam_depth_sub_ = it_.subscribe("/camera/depth/image",
+  cam_depth_sub_ = it_.subscribe("camera/depth/image",
     5, &RGBDReceive::OnDepth, this);
   cam_image_sub_ = it_.subscribe("camera/rgb/image_raw",
     5, &RGBDReceive::OnImage, this);
@@ -41,8 +41,10 @@ void RGBDReceive::OnDepth(const sensor_msgs::ImageConstPtr &msg) {
     return;
   }
   // Call Depth map tracking function
-  uint8_t *ptr = reinterpret_cast<uint8_t*>(cv_depth->image.data);
-  TrackSkel(ptr);
+  cv::Mat *image = new cv::Mat(cv_depth->image.size(), cv_depth->image.type());
+  cv_depth->image.copyTo(*image);
+  guint16 *ptr = reinterpret_cast<guint16*>(image->data);
+  TrackSkel(ptr, msg->width, msg->height);
 }
 
 void RGBDReceive::OnImage(const sensor_msgs::ImageConstPtr &msg) {
@@ -52,16 +54,14 @@ void RGBDReceive::OnImage(const sensor_msgs::ImageConstPtr &msg) {
     ROS_ERROR("CV_BRIDGE  exception: %s", e.what());
     return;
   }
-#ifdef Debug
-  cv::imshow(WINDOW, cv_depth->image);
-  cv::waitKey(3);
+#ifdef DEBUG
+  // cv::imshow(WINDOW, cv_image->image);
+  // cv::waitKey(30);
 #endif
   RGBImage(&(cv_image->image));
 }
 
-void RGBDReceive::TrackSkel(const uint8_t *data) {
-  printf("Hello I am tracking\n");
-}
+void RGBDReceive::TrackSkel(guint16 *data, guint width, guint height) {}
 
 void RGBDReceive::RGBImage(const cv::Mat *image) {}
 }  // namespace sk_track
