@@ -33,7 +33,7 @@ class SeqSkelTrack : public RGBDReceive {
   SeqSkelTrack();
   virtual ~SeqSkelTrack();
 
-  virtual void TrackSkel(guint16 *data, guint width, guint height);
+  virtual void TrackSkel(cv_bridge::CvImageConstPtr data, guint width, guint height);
   void GetJoints();
   virtual void RGBImage(const cv::Mat *image);
  protected:

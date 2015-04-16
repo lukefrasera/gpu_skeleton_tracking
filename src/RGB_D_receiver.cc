@@ -41,10 +41,7 @@ void RGBDReceive::OnDepth(const sensor_msgs::ImageConstPtr &msg) {
     return;
   }
   // Call Depth map tracking function
-  cv::Mat *image = new cv::Mat(cv_depth->image.size(), cv_depth->image.type());
-  cv_depth->image.copyTo(*image);
-  guint16 *ptr = reinterpret_cast<guint16*>(image->data);
-  TrackSkel(ptr, msg->width, msg->height);
+  TrackSkel(cv_depth, msg->width, msg->height);
 }
 
 void RGBDReceive::OnImage(const sensor_msgs::ImageConstPtr &msg) {
@@ -61,7 +58,7 @@ void RGBDReceive::OnImage(const sensor_msgs::ImageConstPtr &msg) {
   RGBImage(&(cv_image->image));
 }
 
-void RGBDReceive::TrackSkel(guint16 *data, guint width, guint height) {}
+void RGBDReceive::TrackSkel(cv_bridge::CvImageConstPtr data, guint width, guint height) {}
 
 void RGBDReceive::RGBImage(const cv::Mat *image) {}
 }  // namespace sk_track
