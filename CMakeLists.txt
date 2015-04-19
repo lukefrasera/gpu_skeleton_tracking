@@ -14,8 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  visualization_msgs
 )
-find_package(CUDA REQUIRED)
+find_package(CUDA)
 find_package(GLIB REQUIRED)
 # find_package(Skeltrack REQUIRED)
 
@@ -146,11 +147,16 @@ target_link_libraries(sequential_skeleton_tracking
   Skeltrack
   # ${Skeltrack_LIBRARIES}
 )
-add_dependencies(sequential_skeleton_tracking Skeltrack)
-#cuda_add_executable(gpu_skeleton_tracking
-#  src/gpu_skeleton_tracking.cu
-#)
+if (${CUDA_FOUND})
 
+add_dependencies(sequential_skeleton_tracking Skeltrack)
+cuda_add_executable(gpu_skeleton_tracking
+  src/gpu_skeleton_tracking.cu
+)
+  message("CUDA Found Adding CUDA executable")
+else (${CUDA_FOUND})
+  message("CUDA Not found")
+endif(${CUDA_FOUND})
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(gpu_skeleton_tracking_node gpu_skeleton_tracking_generate_messages_cpp)

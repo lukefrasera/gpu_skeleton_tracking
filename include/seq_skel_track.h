@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <glib-object.h>
 #include "RGB_D_receiver.h"
 #include "opencv2/opencv.hpp"
+#include <visualization_msgs/MarkerArray.h> 
 
 namespace sk_track {
 class SeqSkelTrack : public RGBDReceive {
@@ -38,6 +39,7 @@ class SeqSkelTrack : public RGBDReceive {
   virtual void RGBImage(const cv::Mat *image);
  protected:
   SkeltrackSkeleton * skeleton;
+  ros::Publisher vis_pub;
 };
 }  // namespace sk_track
 #endif

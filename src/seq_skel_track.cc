@@ -28,6 +28,7 @@ struct BufferInfo {
 };
 SeqSkelTrack::SeqSkelTrack() {
   skeleton = skeltrack_skeleton_new();
+  vis_pub = nh_.advertise<visualization_msgs::MarkerArray>("skeleton_markers", 0);
 }
 SeqSkelTrack::~SeqSkelTrack() {}
 
@@ -38,6 +39,33 @@ static void OnTrack(GObject *obj, GAsyncResult *res, gpointer user_data) {
   BufferInfo *buffer = reinterpret_cast<BufferInfo*>(user_data);
   delete [] buffer->image_data;
   g_slice_free(BufferInfo, user_data);
+}
+
+visualization_msgs::Marker JointToMarker(SkeltrackJoint *joint,unsigned int id) {
+  visualization_msgs::Marker marker;
+
+  marker.header.frame_id = "camera_link";
+  marker.header.stamp = ros::Time();
+  marker.ns = "behavior_network";
+  marker.id = id;
+  marker.type = visualization_msgs::Marker::SPHERE;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.pose.position.x = joint->x/100.0;
+  marker.pose.position.y = joint->y/100.0;
+  marker.pose.position.z = joint->z/100.0;
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = 0.5;
+  marker.scale.y = 0.5;
+  marker.scale.z = 0.5;
+  marker.color.a = 1.0;  // Don't forget to set the alpha!
+  marker.color.r = 0.0;
+  marker.color.g = 1.0;
+  marker.color.b = 0.0;
+
+  return marker;
 }
 void SeqSkelTrack::TrackSkel(cv_bridge::CvImageConstPtr data, guint width, guint height) {
   cv::Mat thresh_image;
@@ -105,6 +133,46 @@ void SeqSkelTrack::TrackSkel(cv_bridge::CvImageConstPtr data, guint width, guint
                                                  SKELTRACK_JOINT_ID_LEFT_ELBOW);
     SkeltrackJoint *right_elbow = skeltrack_joint_list_get_joint(list,
                                                   SKELTRACK_JOINT_ID_RIGHT_ELBOW);
+    visualization_msgs::MarkerArray marker_list;
+
+    if (head) {
+      printf("Head\n");
+      visualization_msgs::Marker marker = JointToMarker(head, 0);
+      marker_list.markers.push_back(marker);
+    }
+    if (left_hand) {
+      printf("Left Hand\n");
+      visualization_msgs::Marker marker = JointToMarker(left_hand, 1);
+      marker_list.markers.push_back(marker);
+    }
+    if (right_hand) {
+      printf("right_hand\n");
+      visualization_msgs::Marker marker = JointToMarker(right_hand, 2);
+      marker_list.markers.push_back(marker);
+    }
+    if (left_shoulder) {
+      printf("left_shoulder\n");
+      visualization_msgs::Marker marker = JointToMarker(left_shoulder, 3);
+      marker_list.markers.push_back(marker);
+    }
+    if (right_shoulder) {
+      printf("right_shoulder\n");
+      visualization_msgs::Marker marker = JointToMarker(right_shoulder, 4);
+      marker_list.markers.push_back(marker);
+    }
+    if (left_elbow) {
+      printf("left_elbow\n");
+     visualization_msgs::Marker marker  = JointToMarker(left_elbow, 5);
+      marker_list.markers.push_back(marker);
+    }
+    if (right_elbow) {
+      printf("right_elbow\n");
+      visualization_msgs::Marker marker = JointToMarker(right_elbow, 6);
+      marker_list.markers.push_back(marker);
+    }
+
+    vis_pub.publish(marker_list);
+
     skeltrack_joint_list_free(list);
   } else {printf("Not Found\n");}
   delete userinfo;
