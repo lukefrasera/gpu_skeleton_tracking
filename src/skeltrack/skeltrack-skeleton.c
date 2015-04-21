@@ -60,6 +60,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "skeltrack-skeleton.h"
 #include "skeltrack-smooth.h"
@@ -1598,7 +1599,10 @@ track_joints (SkeltrackSkeleton *self)
 
   self->priv->graph = make_graph (self, &self->priv->labels);
   centroid = get_centroid (self);
+  clock_t c_start = clock();
   extremas = get_extremas (self, centroid);
+  clock_t c_end = clock();
+  printf("Time: %f\n", 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC);
 
   if (g_list_length (extremas) > 2)
     {

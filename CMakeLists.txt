@@ -148,11 +148,11 @@ target_link_libraries(sequential_skeleton_tracking
   # ${Skeltrack_LIBRARIES}
 )
 if (${CUDA_FOUND})
+# add_dependencies(sequential_skeleton_tracking Skeltrack)
 
-add_dependencies(sequential_skeleton_tracking Skeltrack)
-cuda_add_executable(gpu_skeleton_tracking
-  src/gpu_skeleton_tracking.cu
-)
+  cuda_add_executable(dijkstras
+    src/dijkstra-test.cu
+  )
   message("CUDA Found Adding CUDA executable")
 else (${CUDA_FOUND})
   message("CUDA Not found")
