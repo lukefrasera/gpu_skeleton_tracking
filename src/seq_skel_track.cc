@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "seq_skel_track.h"
 #include <glib-object.h>
+#include "gpu-nsssp.h"
 
 namespace sk_track {
 
@@ -83,7 +84,7 @@ void SeqSkelTrack::TrackSkel(cv_bridge::CvImageConstPtr data, guint width,
   cv::threshold(thresh_image, thresh_image, FAR_CUTOFF, 0,
     CV_THRESH_TOZERO_INV);
 
-  cv::Mat *image = new cv::Mat(cv::Size(80, 60), CV_16U);
+  cv::Mat *image = new cv::Mat(cv::Size(160, 120), CV_16U);
 
   float *img_ptr = reinterpret_cast<float*>(thresh_image.data);
   uint16_t *conv_ptr = reinterpret_cast<uint16_t*>(convert_image.data);
@@ -93,8 +94,8 @@ void SeqSkelTrack::TrackSkel(cv_bridge::CvImageConstPtr data, guint width,
   }
   // cv::Mat *image = new cv::Mat(data->image.size(), data->image.type());
   cv::resize(convert_image, *image, image->size());
-  cv::imshow(WINDOW, convert_image*50);
-  cv::waitKey(30);
+  // cv::imshow(WINDOW, convert_image*50);
+  // cv::waitKey(30);
   // uint16_t *img_ptr = reinterpret_cast<uint16_t*>(image->data);
   // uint16_t min, max;
   // min = max = img_ptr[0];
@@ -119,7 +120,25 @@ void SeqSkelTrack::TrackSkel(cv_bridge::CvImageConstPtr data, guint width,
   //   NULL,
   //   OnTrack,
   //   userinfo);
+#ifdef GPU
+  Node *centroid = skeltrack_skeleton_track_joints_sync_part1(
+    skeleton,
+    ptr,
+    image->size().width,
+    image->size().height,
+    NULL,
+    &error);
+  Graph_t adj_list = GetAdjList(skeleton);
+  int extrema_vertex;
+  // for (int i = 0; i < adj_list.size_v; ++i) {
+  //   printf("V[%d] = %d\n", i, adj_list.vertices[i]);
+  // }
   c_start = clock();
+  Extremas(adj_list.vertices, adj_list.edges, adj_list.size_v, adj_list.size_e, &extrema_vertex, centroid->index);
+  c_end = clock();
+  printf("%f\n", 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC);
+  SkeltrackJointList list = skeltrack_skeleton_track_joints_sync_part2(skeleton, centroid);
+#else
   SkeltrackJointList list = skeltrack_skeleton_track_joints_sync(
     skeleton,
     ptr,
@@ -127,10 +146,9 @@ void SeqSkelTrack::TrackSkel(cv_bridge::CvImageConstPtr data, guint width,
     image->size().height,
     NULL,
     &error);
+#endif
 
-  c_end = clock();
   if (list != NULL) {
-    printf("%f\n", 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC);
     // printf("Found Skeleton\n");
     SkeltrackJoint *head = skeltrack_joint_list_get_joint(list,
       SKELTRACK_JOINT_ID_HEAD);

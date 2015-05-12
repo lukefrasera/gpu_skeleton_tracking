@@ -103,11 +103,13 @@ catkin_package(
 #  CATKIN_DEPENDS cv_bridge image_transport roscpp rospy sensor_msgs std_msgs
 #  DEPENDS system_lib
 )
-
+add_definitions(-DGPU=1)
 ###########
 ## Build ##
 ###########
-
+# set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE ON)
+# set(BUILD_SHARED_LIBS OFF)
+# SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
 #set(GLIB_INCLUDE_DIRS ${ROOT_INCLUDE_DIR}/glib-2.0)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -118,13 +120,16 @@ include_directories(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Glib_INCLUDE_DIRS}
-  # ${Skeltrack_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
 # add_library(gpu_skeleton_tracking
 #   src/${PROJECT_NAME}/gpu_skeleton_tracking.cpp
 # )
+cuda_add_library(gpuNsssp
+  src/gpu-nsssp.cu
+)
+
 add_library(Skeltrack
   src/skeltrack/skeltrack-skeleton.c
   src/skeltrack/pqueue.c
@@ -135,6 +140,9 @@ add_library(Skeltrack
 target_link_libraries(Skeltrack
   ${Glib_LIBRARIES}
 )
+add_dependencies(Skeltrack 
+  gpuNsssp
+)
 ## Declare a cpp executable
 add_executable(sequential_skeleton_tracking 
   src/seq_skeleton_tracking.cc
@@ -144,15 +152,15 @@ add_executable(sequential_skeleton_tracking
 target_link_libraries(sequential_skeleton_tracking
   ${catkin_LIBRARIES}
   ${Glib_LIBRARIES}
+  gpuNsssp
   Skeltrack
-  # ${Skeltrack_LIBRARIES}
 )
 if (${CUDA_FOUND})
 # add_dependencies(sequential_skeleton_tracking Skeltrack)
 
-  cuda_add_executable(dijkstras
-    src/dijkstra-test.cu
-  )
+  # cuda_add_executable(dijkstras
+  #   src/dijkstra-test.cu
+  # )
   message("CUDA Found Adding CUDA executable")
 else (${CUDA_FOUND})
   message("CUDA Not found")

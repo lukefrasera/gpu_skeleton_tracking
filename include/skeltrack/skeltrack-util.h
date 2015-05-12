@@ -24,6 +24,7 @@
 #define __SKELTRACK_UTIL_H__
 
 #include <glib.h>
+#include <stdint.h>
 #include "skeltrack-joint.h"
 
 typedef struct _Label Label;
@@ -50,6 +51,7 @@ struct _Node {
   GList *neighbors;
   GList *linked_nodes;
   Label *label;
+  uint32_t index;
 };
 
 Node *        get_closest_node_to_joint        (GList *extremas,

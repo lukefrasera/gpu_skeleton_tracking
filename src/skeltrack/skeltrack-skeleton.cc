@@ -66,6 +66,7 @@
 #include "skeltrack-skeleton.h"
 #include "skeltrack-smooth.h"
 #include "skeltrack-util.h"
+#include "gpu-nsssp.h"
 
 #define SKELTRACK_SKELETON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), \
                                              SKELTRACK_TYPE_SKELETON, \
@@ -87,6 +88,11 @@
 #define EXTREMA_SPHERE_RADIUS 300
 
 
+typedef struct Graph {
+  int *vertices;
+  int *edges;
+  int size_v, size_e;
+} Graph_t;
 /* private data */
 struct _SkeltrackSkeletonPrivate
 {
@@ -1163,6 +1169,23 @@ get_extremas (SkeltrackSkeleton *self, Node *centroid)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 static GList * get_extremas_gpu(SkeltrackSkeleton *self, Node *centroid) {
+  SkeltrackSkeletonPrivate *priv;
+  gint i, nr_nodes, matrix_size;
+  Node *lowest, *source, *node;
+  GList *extremas = NULL;
+
+  priv = self->priv;
+  lowest = get_lowest (self, centroid);
+  source = lowest;
+  int V[]    = {0, 1, 5, 7, 9};
+  int E[]    = {1, 0, 2, 3, 4, 1, 4, 1, 4, 1, 2, 3};
+  int Sv[]   = {0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4};
+  int num_v = 5;
+  int num_e = 12;
+
+  int extrema_vertex;
+
+  Extremas(V, E, num_v, num_e, &extrema_vertex, 0);
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1602,12 +1625,12 @@ static void GenerateAdjacencyList(SkeltrackSkeleton *self) {
   GList * nodes = priv->graph;
   uint16_t num_v = g_list_length(nodes);
   GList* current;
+  printf("Graph Size: %d\n", num_v);
   Node *node;
   uint32_t sum = 0;
 
   // Allocate Vertex array;
   priv->adjacency_list.vertices = malloc(num_v*sizeof(int));
-  priv->adjacency_list.size_v = num_v;
   //  Calculate the number of edges
   uint32_t index = 0;
   for (current = g_list_first (nodes);
@@ -1616,10 +1639,9 @@ static void GenerateAdjacencyList(SkeltrackSkeleton *self) {
     sum += g_list_length(node->neighbors);
     // Label each node as its index into list
     node->index = index;
-    index++;
   }
   priv->adjacency_list.edges = malloc(sum*sizeof(int));
-  priv->adjacency_list.size_e = sum;
+  printf("Edges: %d\n", sum);
 
   // Generate edge and Vert lists
   int v_index = 0, e_index = 0;
@@ -1640,197 +1662,6 @@ static void GenerateAdjacencyList(SkeltrackSkeleton *self) {
   }
 }
 
-Graph_t GetAdjList(SkeltrackSkeleton *self) {
-  return self->priv->adjacency_list;
-}
-
-static Node * track_joints_part_1(SkeltrackSkeleton *self) {
-  Node * centroid;
-  Node *head = NULL;
-  Node *right_shoulder = NULL;
-  Node *left_shoulder = NULL;
-  GList *extremas;
-  SkeltrackJointList joints = NULL;
-  SkeltrackJointList smoothed = NULL;
-
-  self->priv->graph = make_graph (self, &self->priv->labels);
-  GenerateAdjacencyList(self);
-  centroid = get_centroid (self);
-
-  return centroid;
-}
-
-static SkeltrackJoint ** track_joints_part_2(SkeltrackSkeleton *self, Node *centroid) {
-  Node *head = NULL;
-  Node *right_shoulder = NULL;
-  Node *left_shoulder = NULL;
-  GList *extremas;
-  SkeltrackJointList joints = NULL;
-  SkeltrackJointList smoothed = NULL;
-  
-  extremas = get_extremas (self, centroid);
-
-  free(self->priv->adjacency_list.vertices);
-  free(self->priv->adjacency_list.edges);
-
-
-  if (g_list_length (extremas) > 2)
-    {
-      if (self->priv->previous_head)
-        {
-          gint distance;
-          gboolean can_be_head = FALSE;
-          head = get_closest_node_to_joint (extremas,
-                                            self->priv->previous_head,
-                                            &distance);
-          if (head != NULL &&
-              distance < GRAPH_DISTANCE_THRESHOLD)
-            {
-              can_be_head = check_if_node_can_be_head (self,
-                                                       head,
-                                                       centroid,
-                                                       &left_shoulder,
-                                                       &right_shoulder);
-            }
-
-          if (!can_be_head)
-            head = NULL;
-        }
-
-      if (head == NULL)
-        {
-          get_head_and_shoulders (self,
-                                  extremas,
-                                  centroid,
-                                  &head,
-                                  &left_shoulder,
-                                  &right_shoulder);
-        }
-
-      if (joints == NULL)
-        joints = skeltrack_joint_list_new ();
-
-      set_joint_from_node (&joints,
-                           head,
-                           SKELTRACK_JOINT_ID_HEAD,
-                           self->priv->dimension_reduction);
-
-      if (left_shoulder && head && head->z > left_shoulder->z)
-        {
-          Node *adjusted_shoulder;
-          adjusted_shoulder = get_adjusted_shoulder (self->priv->buffer_width,
-                                                self->priv->buffer_height,
-                                                self->priv->dimension_reduction,
-                                                self->priv->graph,
-                                                centroid,
-                                                head,
-                                                left_shoulder);
-
-          if (adjusted_shoulder)
-            left_shoulder = adjusted_shoulder;
-        }
-
-      set_joint_from_node (&joints,
-                           left_shoulder,
-                           SKELTRACK_JOINT_ID_LEFT_SHOULDER,
-                           self->priv->dimension_reduction);
-
-      if (right_shoulder && head && head->z > right_shoulder->z)
-        {
-          Node *adjusted_shoulder;
-          adjusted_shoulder = get_adjusted_shoulder (self->priv->buffer_width,
-                                                self->priv->buffer_height,
-                                                self->priv->dimension_reduction,
-                                                self->priv->graph,
-                                                centroid,
-                                                head,
-                                                right_shoulder);
-
-          if (adjusted_shoulder)
-            right_shoulder = adjusted_shoulder;
-        }
-      set_joint_from_node (&joints,
-                           right_shoulder,
-                           SKELTRACK_JOINT_ID_RIGHT_SHOULDER,
-                           self->priv->dimension_reduction);
-
-      set_left_and_right_from_extremas (self,
-                                        extremas,
-                                        head,
-                                        left_shoulder,
-                                        right_shoulder,
-                                        &joints);
-    }
-
-  self->priv->buffer = NULL;
-
-  self->priv->main_component = NULL;
-
-  clean_nodes (self->priv->graph);
-  g_list_free (self->priv->graph);
-  self->priv->graph = NULL;
-
-  clean_labels (self->priv->labels);
-  g_list_free (self->priv->labels);
-  self->priv->labels = NULL;
-
-  if (self->priv->enable_smoothing)
-    {
-      smooth_joints (&self->priv->smooth_data, joints);
-
-      if (self->priv->smooth_data.smoothed_joints != NULL)
-        {
-          guint i;
-          smoothed = skeltrack_joint_list_new ();
-          for (i = 0; i < SKELTRACK_JOINT_MAX_JOINTS; i++)
-            {
-              SkeltrackJoint *smoothed_joint, *smooth, *trend;
-              smoothed_joint = NULL;
-              smooth = self->priv->smooth_data.smoothed_joints[i];
-              if (smooth != NULL)
-                {
-                  if (self->priv->smooth_data.trend_joints != NULL)
-                    {
-                      trend = self->priv->smooth_data.trend_joints[i];
-                      if (trend != NULL)
-                        {
-                          smoothed_joint = g_slice_new0 (SkeltrackJoint);
-                          smoothed_joint->x = smooth->x + trend->x;
-                          smoothed_joint->y = smooth->y + trend->y;
-                          smoothed_joint->z = smooth->z + trend->z;
-                          smoothed_joint->screen_x = smooth->screen_x + trend->screen_x;
-                          smoothed_joint->screen_y = smooth->screen_y + trend->screen_y;
-                        }
-                      else
-                        smoothed_joint = skeltrack_joint_copy (smooth);
-                    }
-                  else
-                    smoothed_joint = skeltrack_joint_copy (smooth);
-                }
-              smoothed[i] = smoothed_joint;
-            }
-        }
-      skeltrack_joint_list_free (joints);
-
-      joints = smoothed;
-    }
-
-  if (joints)
-    {
-      SkeltrackJoint *joint = skeltrack_joint_list_get_joint (joints,
-                                                   SKELTRACK_JOINT_ID_HEAD);
-      if (joint != NULL)
-        {
-          skeltrack_joint_free (self->priv->previous_head);
-          self->priv->previous_head = skeltrack_joint_copy (joint);
-        }
-    }
-
-  g_list_free (extremas);
-
-  return joints;
-}
-
 static SkeltrackJoint **
 track_joints (SkeltrackSkeleton *self)
 {
@@ -1844,11 +1675,18 @@ track_joints (SkeltrackSkeleton *self)
 
   self->priv->graph = make_graph (self, &self->priv->labels);
   GenerateAdjacencyList(self);
-  clock_t c_start = clock();
   centroid = get_centroid (self);
+  clock_t c_start = clock();
   
+#ifdef GPU
+  extremas = get_extremas_gpu(self, centroid);
+#else
   extremas = get_extremas (self, centroid);
+  (void)get_extremas_gpu(self, centroid);
+#endif
 
+  clock_t c_end = clock();
+  printf("Time: %f\n", 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC);
   free(self->priv->adjacency_list.vertices);
   free(self->priv->adjacency_list.edges);
 
@@ -1940,8 +1778,6 @@ track_joints (SkeltrackSkeleton *self)
                                         right_shoulder,
                                         &joints);
     }
-  clock_t c_end = clock();
-  printf("%f\n", 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC);
 
   self->priv->buffer = NULL;
 
@@ -2287,39 +2123,4 @@ skeltrack_skeleton_track_joints_sync (SkeltrackSkeleton   *self,
     }
 
   return track_joints (self);
-}
-
-Node* skeltrack_skeleton_track_joints_sync_part1(SkeltrackSkeleton   *self,
-                                      guint16             *buffer,
-                                      guint                width,
-                                      guint                height,
-                                      GCancellable        *cancellable,
-                                      GError             **error)
-{
-  g_return_val_if_fail (SKELTRACK_IS_SKELETON (self), NULL);
-
-  if (self->priv->track_joints_result != NULL && error != NULL)
-    {
-      *error = g_error_new (G_IO_ERROR,
-                            G_IO_ERROR_PENDING,
-                            "Currently tracking joints");
-      return NULL;
-    }
-
-  self->priv->buffer = buffer;
-
-  if (self->priv->buffer_width != width ||
-      self->priv->buffer_height != height)
-    {
-      clean_tracking_resources (self);
-
-      self->priv->buffer_width = width;
-      self->priv->buffer_height = height;
-    }
-  return track_joints_part_1(self);
-}
-
-SkeltrackJointList skeltrack_skeleton_track_joints_sync_part2(SkeltrackSkeleton   *self, Node* centroid)
-{
-  return track_joints_part_2(self, centroid);
 }

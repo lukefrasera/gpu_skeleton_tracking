@@ -27,6 +27,7 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <gio/gio.h>
+#include "skeltrack-util.h"
 
 G_BEGIN_DECLS
 
@@ -40,6 +41,12 @@ G_BEGIN_DECLS
 typedef struct _SkeltrackSkeleton SkeltrackSkeleton;
 typedef struct _SkeltrackSkeletonClass SkeltrackSkeletonClass;
 typedef struct _SkeltrackSkeletonPrivate SkeltrackSkeletonPrivate;
+
+typedef struct Graph {
+  int *vertices;
+  int *edges;
+  int size_v, size_e;
+} Graph_t;
 
 struct _SkeltrackSkeleton
 {
@@ -79,6 +86,15 @@ SkeltrackJointList    skeltrack_skeleton_track_joints_sync      (SkeltrackSkelet
                                                                  guint                height,
                                                                  GCancellable        *cancellable,
                                                                  GError             **error);
+
+SkeltrackJointList skeltrack_skeleton_track_joints_sync_part2(SkeltrackSkeleton   *self, Node* centroid);
+Node* skeltrack_skeleton_track_joints_sync_part1(SkeltrackSkeleton   *self,
+                                      guint16             *buffer,
+                                      guint                width,
+                                      guint                height,
+                                      GCancellable        *cancellable,
+                                      GError             **error);
+Graph_t GetAdjList(SkeltrackSkeleton *self);
 
 void                  skeltrack_skeleton_get_focus_point        (SkeltrackSkeleton   *self,
                                                                  gint                *x,
